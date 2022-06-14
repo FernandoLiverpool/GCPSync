@@ -1,0 +1,37 @@
+steps: 
+  - name: 'gcr.io/cloud-builders/gcloud'
+    script: | 
+      #!/bin/bash
+      
+      dependencies(){
+        echo "deb http://security.ubuntu.com/ubuntu bionic-security main" >> /etc/apt/sources.list
+        apt-get update ; apt-get install -y rsync
+      }
+
+      from_gcs(){
+        gsutil cp gs://crp-dev-dig-ecommercefront-bkt01/SIT_5/build/service-worker.js /tmp
+      }
+
+      setting_ssh(){
+        echo "$SSH_KEY" > /tmp/id_rsa
+        chmod 600 /tmp/id_rsa
+      }
+
+      transfer_files(){
+        touch /tmp/service-worker.js
+        rsync -av -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i /tmp/id_rsa"  /tmp/service-worker.js sshacs@assetspwasitliv5.ssh.upload.akamai.com:897461/liverpool/assetsA/_next/.
+      }
+
+      dependencies
+      from_gcs
+      setting_ssh
+      transfer_files
+    secretEnv: ['SSH_KEY']
+
+availableSecrets: 
+  secretManager: 
+  - versionName: projects/crp-dev-dig-ecommercefront/secrets/LPSIT5/versions/1
+    env: 'SSH_KEY'
+
+logsBucket: 'crp-dev-dig-ecommercefront-bkt01'
+timeout: 20000s
